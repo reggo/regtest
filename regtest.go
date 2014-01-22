@@ -114,3 +114,19 @@ func TestGetAndSetParameters(t *testing.T, p ParameterGetterSetter, name string)
 		t.Errorf("%v: SetParameters did not panic given a slice too short", name)
 	}
 }
+
+type InputOutputer interface {
+	InputDim() int
+	OutputDim() int
+}
+
+func TestInputOutputDim(t *testing.T, io InputOutputer, trueInputDim, trueOutputDim int, name string) {
+	inputDim := io.InputDim()
+	outputDim := io.OutputDim()
+	if inputDim != trueInputDim {
+		t.Errorf("%v: Mismatch in input dimension. expected %v, found %v", name, trueInputDim, inputDim)
+	}
+	if outputDim != trueOutputDim {
+		t.Errorf("%v: Mismatch in input dimension. expected %v, found %v", name, trueOutputDim, inputDim)
+	}
+}

@@ -28,9 +28,9 @@ func maybe(f func()) (b bool) {
 		err := recover()
 		if err != nil {
 			b = true
-		}
-		if throwPanic {
-			panic(err)
+			if throwPanic {
+				panic(err)
+			}
 		}
 	}()
 	f()
@@ -44,16 +44,19 @@ type ParameterGetterSetter interface {
 }
 
 func TestGetAndSetParameters(t *testing.T, p ParameterGetterSetter, name string) {
+
 	// Test that we can get parameters from nil
 	// TODO: Add panic guard
 	var nilParam []float64
 	f := func() {
 		nilParam = p.Parameters(nil)
 	}
+
 	if maybe(f) {
 		t.Errorf("%v: Parameters panicked with nil input", name)
 		return
 	}
+
 	if len(nilParam) != p.NumParameters() {
 		t.Errorf("%v: On nil input, incorrect length returned from Parameters()", name)
 	}

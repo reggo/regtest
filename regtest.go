@@ -150,7 +150,7 @@ func TestInputOutputDim(t *testing.T, io InputOutputer, trueInputDim, trueOutput
 
 type Predictor interface {
 	Predict(input, output []float64) ([]float64, error)
-	PredictBatch(inputs common.RowMatrix, outputs common.MutableRowMatrix) (mat64.Mutable, error)
+	PredictBatch(inputs common.RowMatrix, outputs common.MutableRowMatrix) (common.MutableRowMatrix, error)
 	InputOutputer
 }
 
@@ -316,7 +316,7 @@ func TestDeriv(t *testing.T, trainable DerivTester, inputs, trueOutputs common.R
 	derivative := make([]float64, trainable.NumParameters())
 	parameters := trainable.Parameters(nil)
 	// Don't need to check loss, because if predict is right and losser is right then loss must be correct
-	_ = batchGrad.ObjDeriv(parameters, derivative)
+	_ = batchGrad.ObjGrad(parameters, derivative)
 
 	fdDerivative := make([]float64, trainable.NumParameters())
 
@@ -328,9 +328,9 @@ func TestDeriv(t *testing.T, trainable DerivTester, inputs, trueOutputs common.R
 			tmpDerivative := make([]float64, trainable.NumParameters())
 			copy(newParameters, parameters)
 			newParameters[i] += fdStep
-			loss1 := batchGrad.ObjDeriv(newParameters, tmpDerivative)
+			loss1 := batchGrad.ObjGrad(newParameters, tmpDerivative)
 			newParameters[i] -= 2 * fdStep
-			loss2 := batchGrad.ObjDeriv(newParameters, tmpDerivative)
+			loss2 := batchGrad.ObjGrad(newParameters, tmpDerivative)
 			newParameters[i] += fdStep
 			fdDerivative[i] = (loss1 - loss2) / (2 * fdStep)
 			wg.Done()

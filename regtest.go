@@ -10,6 +10,7 @@ import (
 	"github.com/gonum/floats"
 	"github.com/gonum/matrix/mat64"
 
+	"github.com/reggo/common"
 	"github.com/reggo/loss"
 	"github.com/reggo/regularize"
 	"github.com/reggo/train"
@@ -301,7 +302,7 @@ type DerivTester interface {
 // TestDeriv uses finite difference to test that the prediction from Deriv
 // is correct, and tests that computing the loss in parallel works properly
 // Only does finite difference for the first nTest to save time
-func TestDeriv(t *testing.T, trainable DerivTester, inputs, trueOutputs train.RowMatrix, name string) {
+func TestDeriv(t *testing.T, trainable DerivTester, inputs, trueOutputs common.RowMatrix, name string) {
 
 	// Set the parameters to something random
 	trainable.RandomizeParameters()

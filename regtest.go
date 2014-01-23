@@ -4,19 +4,26 @@ package regtest
 
 import (
 	"math/rand"
+	"sync"
 	"testing"
 
 	"github.com/gonum/floats"
 	"github.com/gonum/matrix/mat64"
 
-	//"github.com/reggo/train"
+	"github.com/reggo/loss"
+	"github.com/reggo/regularize"
+	"github.com/reggo/train"
 
 	"fmt"
 )
 
 var _ = fmt.Println
 
-const throwPanic = true
+const (
+	throwPanic = true
+	fdStep     = 1e-6
+	fdTol      = 1e-6
+)
 
 func panics(f func()) (b bool) {
 	defer func() {
@@ -284,4 +291,53 @@ func TestPredictAndBatch(t *testing.T, p Predictor, inputs, trueOutputs mat64.Ma
 	if err == nil {
 		t.Errorf("PredictBatch did not err with output dim too large")
 	}
+}
+
+type DerivTester interface {
+	train.Trainable
+	RandomizeParameters()
+}
+
+// TestDeriv uses finite difference to test that the prediction from Deriv
+// is correct, and tests that computing the loss in parallel works properly
+// Only does finite difference for the first nTest to save time
+func TestDeriv(t *testing.T, trainable DerivTester, inputs, trueOutputs train.RowMatrix, name string) {
+
+	// Set the parameters to something random
+	trainable.RandomizeParameters()
+
+	// Compute the loss and derivative
+	losser := loss.SquaredDistance{}
+	regularizer := regularize.TwoNorm{}
+
+	batchGrad := train.NewBatchGradBased(trainable, true, inputs, trueOutputs, losser, regularizer)
+
+	derivative := make([]float64, trainable.NumParameters())
+	parameters := trainable.Parameters(nil)
+	// Don't need to check loss, because if predict is right and losser is right then loss must be correct
+	_ = batchGrad.ObjDeriv(parameters, derivative)
+
+	fdDerivative := make([]float64, trainable.NumParameters())
+
+	wg := &sync.WaitGroup{}
+	wg.Add(trainable.NumParameters())
+	for i := 0; i < trainable.NumParameters(); i++ {
+		go func(i int) {
+			newParameters := make([]float64, trainable.NumParameters())
+			tmpDerivative := make([]float64, trainable.NumParameters())
+			copy(newParameters, parameters)
+			newParameters[i] += fdStep
+			loss1 := batchGrad.ObjDeriv(newParameters, tmpDerivative)
+			newParameters[i] -= 2 * fdStep
+			loss2 := batchGrad.ObjDeriv(newParameters, tmpDerivative)
+			newParameters[i] += fdStep
+			fdDerivative[i] = (loss1 - loss2) / (2 * fdStep)
+			wg.Done()
+		}(i)
+	}
+	wg.Wait()
+	if !floats.EqualApprox(derivative, fdDerivative, 1e-6) {
+		t.Errorf("%v: deriv doesn't match: Finite Difference: %v, Analytic: %v", name, fdDerivative, derivative)
+	}
+
 }

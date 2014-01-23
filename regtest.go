@@ -150,13 +150,13 @@ func TestInputOutputDim(t *testing.T, io InputOutputer, trueInputDim, trueOutput
 
 type Predictor interface {
 	Predict(input, output []float64) ([]float64, error)
-	PredictBatch(inputs mat64.Matrix, outputs mat64.Mutable) (mat64.Mutable, error)
+	PredictBatch(inputs common.RowMatrix, outputs common.MutableRowMatrix) (mat64.Mutable, error)
 	InputOutputer
 }
 
 // TestPredict tests that predict returns the expected value, and that calling predict in parallel
 // also works
-func TestPredictAndBatch(t *testing.T, p Predictor, inputs, trueOutputs mat64.Matrix, name string) {
+func TestPredictAndBatch(t *testing.T, p Predictor, inputs, trueOutputs common.RowMatrix, name string) {
 	nSamples, inputDim := inputs.Dims()
 	if inputDim != p.InputDim() {
 		panic("input Dim doesn't match predictor input dim")
